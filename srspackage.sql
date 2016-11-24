@@ -1,6 +1,8 @@
 set serveroutput on
 
 create or replace package srs as
+procedure get_class_info(classid in classes.classid%type);
+procedure get_prereqs(dept_code in prerequisites.dept_code%type, course# in prerequisites.course#%type);
 procedure find_student_class_info(B#_in in students.B#%type);
 procedure show_students;
 procedure show_courses;
@@ -15,11 +17,50 @@ end;
 
 
 create or replace package body srs as
+procedure get_class_info(classid in classes.classid%type)
+        is
+        classIDInvalid boolean;
+        classEmpty boolean;
+        begin
+                classIDInvalid := true;
+                classEmpty := true;
+                for row1 in 
+                        (select cl.classid, co.title
+                        from classes cl join courses co
+                        on cl.dept_code = co.dept_code and cl.course# = co.course#)
+                loop
+                        if (row1.classid = classid) then
+                                classIDInvalid := false;
+                                dbms_output.put_line(row1.classid || ' ' || row1.title);
+                                for row2 in
+                                        (select e.B#, s.firstname, e.classid
+                                        from enrollments e join students s
+                                        on e.B# = s.B#)
+                                loop
+                                        if (row1.classid = row2.classid) then
+                                                classEmpty := false;
+                                                dbms_output.put_line(row2.B# || ' ' || row2.firstname);
+                                        end if;
+                                end loop;
+                        end if;
+                end loop;
+                if(not classIDInvalid and classEmpty) then
+                        dbms_output.put_line('No student has enrolled in the class.');
+                elsif(classIDInvalid) then
+                        dbms_output.put_line('The classid is invalid.');
+                end if;
+        end;
+
 procedure get_prereqs(dept_code in prerequisites.dept_code%type, course# in prerequisites.course#%type)
         is
         begin
-                
-
+                for row in (select * from prerequisites)
+                loop
+                        if (row.dept_code = dept_code and row.course# = course#) then
+                                dbms_output.put_line(row.pre_dept_code || ' ' || row.pre_course#);
+                        get_prereqs(row.pre_dept_code, row.pre_course#);
+                        end if;
+                end loop;               
         end;
 
 procedure find_student_class_info(B#_in in students.B#%type)
