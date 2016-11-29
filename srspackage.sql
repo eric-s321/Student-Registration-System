@@ -1,6 +1,8 @@
 set serveroutput on
 
+
 create or replace package srs as
+procedure enroll_student(B# in students.B#%type, classid in classes.classid%type);
 procedure get_class_info(classid in classes.classid%type);
 procedure get_prereqs(dept_code in prerequisites.dept_code%type, course# in prerequisites.course#%type);
 procedure find_student_class_info(B#_in in students.B#%type);
@@ -17,6 +19,135 @@ end;
 
 
 create or replace package body srs as
+procedure enroll_student(B# in students.B#%type, classid in classes.classid%type)
+        is
+        enrollmentAccepted boolean;
+        invalidB# boolean;
+        invalidClassid boolean;
+        classFull boolean;
+        studentAlreadyInClass boolean;
+        numClassesEnrolledIn int;
+        classSemester classes.semester%type;
+        classYear classes.year%type;
+        B#_in students.B#%type;
+        classid_in classes.classid%type;
+        currentPrereqFound boolean;
+        prereqsSatisfied boolean;
+        begin
+                enrollmentAccepted := true;
+                invalidB# := true;
+                invalidClassid := true;
+                classFull := false;
+                studentAlreadyInClass := false;
+                numClassesEnrolledIn := 0;
+                B#_in := B#;
+                classid_in := classid;
+
+                for row in (select B# from students) -- Loop through each student in students table
+                loop
+                        if(row.B# = B#) then   -- If the B# passed into enroll_student is found, the B# is valid 
+                                invalidB# := false;
+                        end if;
+                end loop;
+
+                for row in (select * from classes) -- Loop through each class in classes table
+                loop
+                        if(row.classid = classid) then   -- If the classid passed into enroll_student is found, the classid is valid
+                                invalidClassid := false;
+                                classSemester := row.semester;
+                                classYear := row.year;
+                                if(row.class_size + 1 > row.limit) then  -- If adding student to the class would cause the class_size > limit, the class is full
+                                        classFull := true;
+                                end if;
+                        end if;
+                end loop;
+
+                for row in (select * from enrollments)  -- Loop through each enrollment
+                loop
+                        if(row.B# = B# and row.classid = classid) then  -- If B# and classid are found in enrollments table, student is already taking that class
+                                studentAlreadyInClass := true;
+                        end if;
+                end loop;
+
+                if (not invalidClassid) then
+                        select count(*) into numClassesEnrolledIn                 --Count the number of classes that the student is taking in the same year and semester
+                        from enrollments e join classes c on e.classid=c.classid  --Use this value to check if the student is overloaded.
+                        where B#=B#_in and year=classYear and semester=classSemester;
+                end if;
+        
+
+                prereqsSatisfied := true; 
+                for row1 in 
+                        (select c.classid, c.dept_code, c.course#                               --All prereqs needed to be able to enroll in the class
+                        from classes c join
+                                (select *
+                                from classes c join prerequisites p
+                                on c.dept_code=p.dept_code and c.course#=p.course#
+                                where c.classid=classid_in) temp
+                        on c.dept_code=temp.pre_dept_code and c.course#=temp.pre_course#)
+                loop
+                        currentPrereqFound := false;
+                        for row2 in
+                                (select c.classid, c.dept_code, c.course#,enrolledGrades.ngrade         
+                                from classes c join
+                                (select *                               -- find all classes and grade info the student has taken
+                                from grades g join enrollments e
+                                on g.lgrade=e.lgrade
+                                where e.B#=B#_in) enrolledGrades
+                                on c.classid = enrolledGrades.classid)
+                        loop
+--                              dbms_output.put_line('row2 class id is: ' || ' ' || row2.classid
+--                                      || ' ' || 'row1 class id is: ' || ' ' || row1.classid
+--                                      || ' ' || 'row2 ngrade is: ' || row2.ngrade);
+                                if (row2.dept_code = row1.dept_code and row2.course# = row1.course# and row2.ngrade >= 2) then   -- check for correct class with C or better grade
+                                        dbms_output.put_line('Class ids match and grade is C or better');
+                                        currentPrereqFound := true;
+                        --              exit;
+                                end if;
+                        end loop;
+                        if (not currentPrereqFound) then
+                                prereqsSatisfied := false;
+                        --      exit;
+                        end if;
+                end loop;
+
+                if (invalidB#) then
+                        dbms_output.put_line('The B# is invalid.');
+                        enrollmentAccepted := false;
+                end if;
+                if (invalidClassid) then
+                        dbms_output.put_line('The classid is invalid.');
+                        enrollmentAccepted := false;
+                end if;
+                if (classFull) then
+                        dbms_output.put_line('The class is full.');
+                        enrollmentAccepted := false;
+                end if;
+                if (studentAlreadyInClass) then
+                        dbms_output.put_line('The student is already in the class.');
+                        enrollmentAccepted := false;
+                end if;
+                if (numClassesEnrolledIn = 3) then
+                        dbms_output.put_line('You are overloaded.');
+                end if;
+                if (numClassesEnrolledIn = 4) then
+                        dbms_output.put_line('Students cannot be enrolled in more than four classes in the same semester.');
+                        enrollmentAccepted := false;
+                end if;
+                if (not prereqsSatisfied) then
+                        dbms_output.put_line('Prerequisite not satisfied.');
+                        enrollmentAccepted := false;
+                end if;
+                if (enrollmentAccepted) then
+                        dbms_output.put_line('Good to enroll');
+                        insert into enrollments values (B#,classid,null);
+                end if;
+--              dbms_output.put_line('Student is enrolled in this many classes: ');
+--              dbms_output.put_line(numClassesEnrolledIn);
+--              dbms_output.put_line(classSemester);
+--              dbms_output.put_line(classYear);
+        end;
+
 procedure get_class_info(classid in classes.classid%type)
         is
         classIDInvalid boolean;
