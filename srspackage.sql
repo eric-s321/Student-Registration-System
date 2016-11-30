@@ -2,6 +2,7 @@ set serveroutput on
 
 
 create or replace package srs as
+procedure drop_class(B# in students.B#%type, classid in classes.classid%type);
 procedure enroll_student(B# in students.B#%type, classid in classes.classid%type);
 procedure get_class_info(classid in classes.classid%type);
 procedure get_prereqs(dept_code in prerequisites.dept_code%type, course# in prerequisites.course#%type);
@@ -19,6 +20,114 @@ end;
 
 
 create or replace package body srs as
+procedure drop_class(B# in students.B#%type, classid in classes.classid%type)
+        is
+        allowClassDrop boolean;
+        invalidB# boolean;
+        invalidClassid boolean;
+        studentInClass boolean;
+        enrolledClasses int;
+        classSize int;
+        B#_in students.B#%type;
+        classid_in classes.classid%type;
+        classDeptCode classes.dept_code%type;
+        classCourse# classes.course#%type;
+        prereqsOK boolean;
+        begin
+                invalidB# := true;
+                invalidClassid := true;
+                studentInClass := false;
+                allowClassDrop := true;
+                enrolledClasses := 0;
+                classSize := 0;
+                B#_in := B#;
+                classid_in := classid;
+                prereqsOK := true;
+
+                for row in (select B# from students) -- Loop through each student in students table
+                loop
+                        if(row.B# = B#) then   -- If the B# passed into drop_class is found, the B# is valid 
+                                invalidB# := false;
+                        end if;
+                end loop;
+
+                for row in (select * from classes) -- Loop through each class in classes table
+                loop
+                        if(row.classid = classid) then   -- If the classid passed into drop_class is found, the classid is valid
+                                invalidClassid := false;
+                        end if;
+                end loop;
+        
+                for row in (select * from enrollments)          -- Loop through all current enrollments
+                loop
+                        if(row.B# = B# and row.classid = classid) then          --If B# and classid are found in enrollments table, student is taking the class they want to drop
+                                studentInClass := true; 
+                        end if;
+                end loop;
+
+                if (not invalidB#) then
+                        select count(*) into enrolledClasses                    -- count the number of classes the student is currently enrolled in
+                        from enrollments                                        -- if this value is 1, then dropping it will cause the student to not be enrolled in any classes
+                        where B#=B#_in; 
+                end if;
+                if (not invalidClassid) then
+                        select class_size into classSize                        --Check current size of class, if it is 1, the student is last enrolled in the 
+                        from classes                                            --class and it will become empty
+                        where classid=classid_in;
+                end if;
+                if (studentInClass) then
+                        select dept_code, course# into classDeptCode, classCourse#   --store dept_code and course#
+                        from classes                                                 --of class they wish to drop
+                        where classid = classid_in;
+        
+                        for row in 
+                                (select  p.pre_dept_code, p.pre_course#  --Get all prereqs for currently enrolled classes
+                                from enrollments e 
+                                join classes c
+                                        on e.classid = c.classid
+                                join prerequisites p
+                                        on c.dept_code = p.dept_code and c.course# = p.course#
+                                where e.B#=B#_in
+                                group by p.pre_dept_code, p.pre_course#)
+                        loop
+                                if(row.pre_dept_code = classDeptCode and row.pre_course# = classCourse#) then  --if they are trying to drop a prereq for another class do not allow.
+                                        prereqsOK := false;     
+                                end if;
+                --              dbms_output.put_line('dept code is ' || ' '  || classDeptCode
+                --                      || ' ' || 'course num is ' || classCourse#);
+                        end loop;
+                end if;
+                                
+                if (invalidB#) then
+                        dbms_output.put_line('The B# is invalid.');
+                        allowClassDrop := false;
+                end if;
+                if (invalidClassid) then
+                        dbms_output.put_line('The classid is invalid.');
+                        allowClassDrop := false;
+                end if;
+                if (not studentInClass and not invalidB# and not invalidClassid) then           --Check all 3 conditions because if invalid B# or invalid classid class info  
+                        dbms_output.put_line('The student is not enrolled in the class.');      --will not be found in enrollments table
+                        allowClassDrop := false;
+                end if;
+                if (enrolledClasses = 1 and studentInClass) then
+                        dbms_output.put_line('This student is no longer enrolled in any classes');
+                end if;
+                if (classSize = 1 and studentInClass) then
+                        dbms_output.put_line('The class now has no students.');
+                end if;
+                if (not prereqsOK) then
+                        dbms_output.put_line('The drop is not permitted because another class uses it as a prerequisite');
+                        allowClassDrop := false;
+                end if;
+                if (allowClassDrop) then
+                        dbms_output.put_line('Dropping class...');
+                        delete from enrollments
+                        where B# = B#_in and classid = classid_in;                      
+                end if;
+--              dbms_output.put_line('Student is enrolled in: ' || enrolledClasses || ' ' || ' classes');
+--              dbms_output.put_line('Size of class is: ' || classSize);
+        end;
 procedure enroll_student(B# in students.B#%type, classid in classes.classid%type)
         is
         enrollmentAccepted boolean;
@@ -69,7 +178,7 @@ procedure enroll_student(B# in students.B#%type, classid in classes.classid%type
                         end if;
                 end loop;
 
-                if (not invalidClassid) then
+                if (not invalidClassid and not invalidB#) then
                         select count(*) into numClassesEnrolledIn                 --Count the number of classes that the student is taking in the same year and semester
                         from enrollments e join classes c on e.classid=c.classid  --Use this value to check if the student is overloaded.
                         where B#=B#_in and year=classYear and semester=classSemester;
@@ -100,7 +209,7 @@ procedure enroll_student(B# in students.B#%type, classid in classes.classid%type
 --                                      || ' ' || 'row1 class id is: ' || ' ' || row1.classid
 --                                      || ' ' || 'row2 ngrade is: ' || row2.ngrade);
                                 if (row2.dept_code = row1.dept_code and row2.course# = row1.course# and row2.ngrade >= 2) then   -- check for correct class with C or better grade
-                                        dbms_output.put_line('Class ids match and grade is C or better');
+--                                      dbms_output.put_line('Class ids match and grade is C or better');
                                         currentPrereqFound := true;
                         --              exit;
                                 end if;
@@ -139,7 +248,7 @@ procedure enroll_student(B# in students.B#%type, classid in classes.classid%type
                         enrollmentAccepted := false;
                 end if;
                 if (enrollmentAccepted) then
-                        dbms_output.put_line('Good to enroll');
+                        dbms_output.put_line('Enrolling...');
                         insert into enrollments values (B#,classid,null);
                 end if;
 --              dbms_output.put_line('Student is enrolled in this many classes: ');
