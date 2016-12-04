@@ -55,7 +55,172 @@ public class TableGetter {
         catch (SQLException ex) { System.out.println ("\n*** SQLException caught ***\n" + ex.getMessage());}
             catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}    
         }
+
+        public String deleteStudent(String BNum){
+                try{
+                //set up call for stored function
+                        CallableStatement cs = conn.prepareCall("begin ? := srs_java.delete_student(?); end;");
+                        String results = new String();  
+                        
+            cs.registerOutParameter(1, java.sql.Types.VARCHAR);
+                        cs.setString(2, BNum);
+                        
+            //execute drop class function
+            cs.execute();
+                        String errors = cs.getString(1);   
+                        if (errors != null){    //A problem was found with the input
+                                results = errors;
+                        } 
+                        else {
+                                results = "The student has been deleted.";
+                        }
+                        cs.close();
+                        return results;
+            }
+        catch (SQLException ex) { System.out.println ("\n*** SQLException caught ***\n" + ex.getMessage());}
+            catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}    
+            return null;
+        }
+
+
+        public String dropClass(String BNum, String classid){
+                try{
+                //set up call for stored function
+                        CallableStatement cs = conn.prepareCall("begin ? := srs_java.drop_class(?,?); end;");
+                        String results = new String();  
+                        
+            cs.registerOutParameter(1, java.sql.Types.VARCHAR);
+                        cs.setString(2, BNum);
+                        cs.setString(3, classid);
+                        
+            //execute drop class function
+            cs.execute();
+                        String errors = cs.getString(1);   
+                        if (errors != null){    //A problem was found with the input
+                                results = errors;
+                        } 
+                        else {
+                                results = "Student successfully dropped the class.";
+                        }
+                        cs.close();
+                        return results;
+            }
+        catch (SQLException ex) { System.out.println ("\n*** SQLException caught ***\n" + ex.getMessage());}
+            catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}    
+            return null;
+        }
+
+        public String enrollStudent(String BNum, String classid){
+                try{
+                //set up call for stored function
+                        CallableStatement cs = conn.prepareCall("begin ? := srs_java.enroll_student(?,?); end;");
+                        String results = new String();  
+                        
+            cs.registerOutParameter(1, java.sql.Types.VARCHAR);
+                        cs.setString(2, BNum);
+                        cs.setString(3, classid);
+                        
+            //execute enroll student function
+            cs.execute();
+                        String errors = cs.getString(1);   
+                        if (errors != null){    //A problem was found with the input
+                                results = errors;
+                        } 
+                        else {
+                                results = "Student successfully enrolled.";
+                        }
+                        cs.close();
+                        return results;
+            }
+        catch (SQLException ex) { System.out.println ("\n*** SQLException caught ***\n" + ex.getMessage());}
+            catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}    
+            return null;
+        }
         
+        public String getClassEnrollmentInfo(String classid){
+                try{
+                //set up call for stored function
+                        CallableStatement cs = conn.prepareCall("begin ? := srs_java.get_class_info_helper(?); end;");
+                        String results = new String();  
+                        
+            cs.registerOutParameter(1, java.sql.Types.VARCHAR);
+                        cs.setString(2, classid);
+                        
+            //execute get class infos helper and find out if the input was valid
+            cs.execute();
+                        String errors = cs.getString(1);
+                        if (errors != null){    //A problem was found with the input
+                                System.out.println("ERROR " + errors);
+                        } 
+                        else{  //Input is valid, retrieve results
+                                CallableStatement cs1 = conn.prepareCall("begin ? := srs_java.get_class_info(?); end;");
+                                cs1.registerOutParameter(1, OracleTypes.CURSOR);        
+                                cs1.setString(2,classid);
+
+                                cs1.execute();
+                    ResultSet rs = (ResultSet) cs1.getObject(1);
+
+                        //store result of get_prereqs in string to be passed back to caller
+                                while (rs.next()) {
+                                        for (int i = 1; i <=4; i++)
+                                                results += rs.getString(i) + "\t";
+                                        results += "\n";
+                                }
+                                cs1.close();
+                                rs.close();
+                        }
+                        cs.close();
+                        return results;
+            }
+        catch (SQLException ex) { System.out.println ("\n*** SQLException caught ***\n" + ex.getMessage());}
+            catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}    
+            return null;
+        }
+        
+        public String getNeedAsPrereq(String deptCode, int courseNum){
+                try{
+                //set up call for stored function
+                        CallableStatement cs = conn.prepareCall("begin ? := srs_java.get_prereqs_helper(?,?); end;");
+                        String results = new String();  
+                        
+            cs.registerOutParameter(1, java.sql.Types.VARCHAR);
+                        cs.setString(2, deptCode);
+                        cs.setInt(3, courseNum);
+                        
+            //execute get prereqs helper and find out if the input was valid
+            cs.execute();
+                        String errors = cs.getString(1);
+                        System.out.println("got past helper call");
+                        if (errors != null){    //A problem was found with the input
+                                System.out.println("ERROR " + errors);
+                        } 
+                        else{  //Input is valid, retrieve results
+                                CallableStatement cs1 = conn.prepareCall("begin ? := srs_java.get_prereqs(?,?); end;");
+                                cs1.registerOutParameter(1, OracleTypes.CURSOR);        
+                                cs1.setString(2,deptCode);
+                                cs1.setInt(3,courseNum);
+                                System.out.println("Right before execute");
+
+                                cs1.execute();
+                                System.out.println("right after execute");
+                    ResultSet rs = (ResultSet) cs1.getObject(1);
+
+                        //store result of get_prereqs in string to be passed back to caller
+                                while (rs.next()) {
+                                        for (int i = 1; i <=2; i++)
+                                                results += rs.getString(i) + "\t";
+                                        results += "\n";
+                                }
+                                cs1.close();
+                                rs.close();
+                        }
+                        cs.close();
+                        return results;
+            }
+        catch (SQLException ex) { System.out.println ("\n*** SQLException caught ***\n" + ex.getMessage());}
+            catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}    
+            return null;
+        }
         public String getStudentClassInfo(){
                 try{
 //                      String sid = new String("B001");

@@ -71,7 +71,7 @@ begin
                 values (logSeq.nextval, current_user, current_timestamp, 'enrollments', 'delete', :old.B# || ',' || :old.classid);
         else
                 insert into logs                --add insertion log
-                values (logSeq.nextval, current_user, current_timestamp, 'enrollments', 'insert', :old.B# || ',' || :old.classid);
+                values (logSeq.nextval, current_user, current_timestamp, 'enrollments', 'insert', :new.B# || ',' || :new.classid);
         end if;
 end;
 /

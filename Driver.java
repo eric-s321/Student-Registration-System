@@ -1,3 +1,6 @@
+import java.util.Scanner;
+
+
 public class Driver{
 
         public static void main(String args[]){
@@ -34,11 +37,61 @@ public class Driver{
                 System.out.println("The log info is below: ");
                 System.out.println(logs);
                 
-                String studentClassInfo = tableGetter.getStudentClassInfo();
-                System.out.println("The student class info is below: ");
-                System.out.println(studentClassInfo);
+//              String studentClassInfo = tableGetter.getStudentClassInfo();
+//              System.out.println("The student class info is below: ");
+//              System.out.println(studentClassInfo);
+                
+        Scanner scanner = new Scanner(System.in);
 
-                tableGetter.test();
+//        System.out.print("Dept Code:  ");
+//       String deptCode = scanner.next();
+//              System.out.print("Course#: ");
+//              String courseNum = scanner.next();
+//              String needAsPrereq = tableGetter.getNeedAsPrereq(deptCode,Integer.parseInt(courseNum));
+//              System.out.println(needAsPrereq);
+//              tableGetter.test();
+
+//              System.out.print("Class id: ");
+//              String classid = scanner.next();
+//              String classInfo = tableGetter.getClassEnrollmentInfo(classid);
+//              System.out.println(classInfo);
+                
+//              System.out.print("B#: ");
+//              String BNum = scanner.next();
+//              System.out.print("Class id: ");
+//              String classid = scanner.next();
+//              String enrollmentResults = tableGetter.enrollStudent(BNum,classid); 
+//              if (enrollmentResults.equals("Student successfully enrolled.")){
+//                      System.out.println (enrollmentResults);
+//              }
+//              else{
+//                      System.out.println("The following issue(s) were found: ");
+//                      System.out.println(enrollmentResults);
+//              }       
+
+//              System.out.print("B#: ");
+//              String BNum = scanner.next();
+//              System.out.print("Class id: ");
+//              String classid = scanner.next();
+//              String dropClassResults = tableGetter.dropClass(BNum,classid); 
+//              if (dropClassResults.equals("Student successfully dropped the class.")){
+//                      System.out.println (dropClassResults);
+//              }
+//              else{
+//                      System.out.println("The following issue(s) were found: ");
+//                      System.out.println(dropClassResults);
+//              }       
+                
+                System.out.println("B#: ");
+                String BNum = scanner.next();
+                String deleteStudentResults = tableGetter.deleteStudent(BNum);
+                if(deleteStudentResults.equals("The student has been deleted.")){
+                        System.out.println(deleteStudentResults);
+                }
+                else{
+                        System.out.println("The following issue(s) were found: ");
+                        System.out.println(deleteStudentResults);
+                }
 
                 tableGetter.closeConnection();
                 
