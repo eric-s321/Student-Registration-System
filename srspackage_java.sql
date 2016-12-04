@@ -1,27 +1,75 @@
 set serveroutput on
 
 
-create or replace package srs as
+create or replace package srs_java as
 type ref_cursor is ref cursor;
+procedure delete_student(B#_in in students.B#%type);
 procedure drop_class(B# in students.B#%type, classid in classes.classid%type);
 procedure enroll_student(B# in students.B#%type, classid in classes.classid%type);
 procedure get_class_info(classid in classes.classid%type);
 procedure get_prereqs(dept_code in prerequisites.dept_code%type, course# in prerequisites.course#%type);
-procedure find_student_class_info(B#_in in students.B#%type);
+--procedure find_student_class_info(B#_in in students.B#%type, error_message out varchar2, rc out ref_cursor);  --Lists every class a student has taken with grade info
+procedure test_proc(error_message out varchar2);
+function find_student_class_info(B#_in in students.B#%type) --Lists every class a student has taken with grade info
+        return ref_cursor;
+function find_student_class_helper(B#_in in students.B#%type)
+        return varchar2;  
 function show_students
         return ref_cursor;
-procedure show_courses;
-procedure show_course_credit;
-procedure show_prerequisites;
-procedure show_classes;
-procedure show_enrollments;
-procedure show_grades;
-procedure show_logs;
+function test_func
+        return varchar2;
+function show_courses
+        return ref_cursor;
+function show_course_credit
+        return ref_cursor;
+function show_prerequisites
+        return ref_cursor;
+function show_classes
+        return ref_cursor;
+function show_enrollments
+        return ref_cursor;
+function show_grades
+        return ref_cursor;
+function show_logs
+        return ref_cursor;
 end;
 /
 
 
-create or replace package body srs as
+create or replace package body srs_java as
+procedure test_proc(error_message out varchar2)
+        is
+        --error_message varchar2(20);
+        --rc ref_cursor;
+        begin
+                error_message := 'I am an error message';
+                --open rc for 
+                        --select * from classes;
+                
+                dbms_output.put_line('test');
+        end;
+
+
+procedure delete_student(B#_in in students.B#%type)
+    is
+    invalidB# boolean;
+    begin
+        invalidB# := true;
+        for row in (select B# from students) -- Loop through each student in students table
+        loop
+            if(row.B# = B#_in) then   -- If the B# passed into delete_student is found, the B# is valid
+                invalidB# := false;
+            end if;
+        end loop;
+
+        if invalidB# then           --If B# was invalid output message about it
+            dbms_output.put_line('The B# is invalid.');
+        else                        --Valid B#, proceed to delete student
+            delete from students      --Delete student from the students table
+            where B# = B#_in;
+        end if;
+    end;
+
 procedure drop_class(B# in students.B#%type, classid in classes.classid%type)
         is
         allowClassDrop boolean;
@@ -305,36 +353,81 @@ procedure get_prereqs(dept_code in prerequisites.dept_code%type, course# in prer
                 end loop;               
         end;
 
-procedure find_student_class_info(B#_in in students.B#%type)
+--procedure find_student_class_info(B#_in in students.B#%type, error_message out varchar2, rc out ref_cursor)  
+--      is
+--      error_message varchar2(100);
+--      rc ref_cursor;
+--      classInfoFound boolean;
+--      isAStudent boolean;
+--      begin
+--              error_message := '';
+--              classInfoFound := false;        
+--              isAStudent := false;
+--              for row in (select * from students)     
+--              loop
+--                      if(row.B# = B#_in) then
+--                              isAStudent := true;
+--                              exit;
+--                      end if; 
+--              end loop;
+--              if (isAStudent and not classInfoFound) then
+--                      error_message := error_message || 'The student has not taken any course.\n';
+--              elsif (not isAStudent) then
+--                      error_message := error_message || 'The B# is invalid\n';
+--              end if;
+--              open rc for
+--                      select c.classid, c.dept_code, c.course#, c.sect#, c.year, c.semester, g.lgrade, g.ngrade 
+--                      from enrollments e, classes c, grades g 
+--                      where e.classid=c.classid and e.lgrade=g.lgrade and e.B#=B#_in;
+--
+--      end;
+
+function find_student_class_helper(B#_in in students.B#%type)   --Checks for problems with input for find_student_class_info
+        return varchar2
         is
+        error_message varchar2(100);
         classInfoFound boolean;
         isAStudent boolean;
         begin
-                classInfoFound := false;        
-                isAStudent := false;
-                for row in 
-                        (select e.B#, c.classid, c.dept_code, c.course#, c.sect#, c.year, c.semester, g.lgrade, g.ngrade 
-                        from enrollments e, classes c, grades g 
-                        where e.classid=c.classid and e.lgrade=g.lgrade)
-                loop
-                        if (row.B# = B#_in) then
-                                dbms_output.put_line(row.classid || ' ' || row.dept_code || ' ' || row.course# || ' ' || 
-                                        row.sect# || ' ' || row.year || ' ' || row.semester || ' ' || row.lgrade || ' ' || row.ngrade);
-                                classInfoFound := true;
-                        end if;
-                end loop;
-                for row in (select * from students)     
-                loop
-                        if(row.B# = B#_in) then
-                                isAStudent := true;
+                error_message := '';
+        classInfoFound := false;
+        isAStudent := false;
+        for row in
+            (select e.B#, c.classid, c.dept_code, c.course#, c.sect#, c.year, c.semester, g.lgrade, g.ngrade
+            from enrollments e, classes c, grades g
+            where e.classid=c.classid and e.lgrade=g.lgrade)
+        loop
+            if (row.B# = B#_in) then
+                classInfoFound := true;
                                 exit;
-                        end if; 
-                end loop;
-                if (isAStudent and not classInfoFound) then
-                        dbms_output.put_line('The student has not taken any course.');
-                elsif (not isAStudent) then
-                        dbms_output.put_line('The B# is invalid');
-                end if;
+            end if;
+        end loop;
+        for row in (select * from students)
+        loop
+            if(row.B# = B#_in) then
+                isAStudent := true;
+                exit;
+            end if;
+        end loop;
+        if (isAStudent and not classInfoFound) then
+                        error_message := 'The student has not taken any course.';
+        elsif (not isAStudent) then
+                        error_message := 'The B# is invalid';
+        end if;
+                return error_message;
+        end;
+
+
+function find_student_class_info(B#_in in students.B#%type)  --Lists every class a student has taken with grade info
+        return ref_cursor
+        is
+        rc ref_cursor;
+        begin
+                open rc for
+                        select c.classid, c.dept_code, c.course#, c.sect#, c.year, c.semester, g.lgrade, g.ngrade 
+                        from enrollments e, classes c, grades g 
+                        where e.classid=c.classid and e.lgrade=g.lgrade and e.B#=B#_in;
+                return rc;
         end;
 
 function show_students 
@@ -342,75 +435,88 @@ function show_students
     is
     rc ref_cursor;
     begin
-        open rc for
-        select * from students;
-        return rc;
+                open rc for
+                select * from students;
+                return rc;
     end;
 
-procedure show_courses
+function test_func
+        return varchar2
         is
+        output varchar2(500);
         begin
-                for row in (select * from courses)
-                loop
-                        dbms_output.put_line(row.dept_code || ' ' || row.course# || ' ' || row.title);  
-                end loop;
+                output := 'Testing, Testing, 1 2 3';
+                return output;
         end;
 
-procedure show_course_credit
+function show_courses
+        return ref_cursor
         is
+        rc ref_cursor;
         begin
-                for row in (select * from course_credit)
-                loop
-                        dbms_output.put_line(row.course# || ' ' || row.credits);
-                end loop;
+                open rc for
+                        select * from courses;
+                return rc;
         end;
 
-procedure show_prerequisites
+function show_course_credit
+        return ref_cursor
         is
+        rc ref_cursor;
         begin
-                for row in (select * from prerequisites)
-                loop
-                        dbms_output.put_line(row.dept_code || ' ' || row.course# || ' ' || row.pre_dept_code ||
-                        ' ' || row.pre_course#);
-                end loop;
+                open rc for
+                        select * from course_credit;
+                return rc;
         end;
 
-procedure show_classes
+function show_prerequisites
+        return ref_cursor
         is
+        rc ref_cursor;
         begin
-                for row in (select * from classes)
-                loop
-                        dbms_output.put_line(row.classid || ' ' || row.dept_code || ' ' || row.course# || ' ' || row.sect# ||
-                        ' ' || row.year || ' ' || row.semester || ' ' || row.limit || ' ' || row.class_size);
-                end loop;
+                open rc for
+                        select * from prerequisites;
+                return rc;
         end;
 
-procedure show_enrollments
+function show_classes
+        return ref_cursor
         is
+        rc ref_cursor;
         begin
-                for row in (select * from enrollments)
-                loop
-                        dbms_output.put_line(row.B# || ' ' || row.classid || ' ' || row.lgrade);
-                end loop;
+                open rc for
+                        select * from classes;
+                return rc;
         end;
 
-procedure show_grades
+function show_enrollments
+        return ref_cursor
         is
+        rc ref_cursor;
         begin
-                for row in (select * from grades)
-                loop
-                        dbms_output.put_line(row.lgrade || ' ' || row.ngrade);
-                end loop;
+                open rc for
+                        select * from enrollments;
+                return rc;
         end;
 
-procedure show_logs
+function show_grades
+        return ref_cursor
         is
+        rc ref_cursor;
         begin
-                for row in (select * from logs)
-                loop
-                        dbms_output.put_line(row.logid || ' ' || row.who || ' ' || row.time || ' ' || row.table_name || 
-                        ' ' || row.operation || ' ' || row.key_value);
-                end loop;
+                open rc for
+                        select * from grades;
+                return rc;
+        end;
+
+function show_logs
+        return ref_cursor
+        is
+        rc ref_cursor;
+        begin
+                open rc for
+                        select * from logs;
+                return rc;
         end;
 
 end;

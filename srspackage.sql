@@ -2,6 +2,7 @@ set serveroutput on
 
 
 create or replace package srs as
+procedure delete_student(B#_in in students.B#%type);
 procedure drop_class(B# in students.B#%type, classid in classes.classid%type);
 procedure enroll_student(B# in students.B#%type, classid in classes.classid%type);
 procedure get_class_info(classid in classes.classid%type);
@@ -20,6 +21,29 @@ end;
 
 
 create or replace package body srs as
+
+procedure delete_student(B#_in in students.B#%type)
+        is
+        invalidB# boolean;
+        begin
+                invalidB# := true;
+                for row in (select B# from students) -- Loop through each student in students table
+                loop
+                        if(row.B# = B#_in) then   -- If the B# passed into delete_student is found, the B# is valid 
+                                invalidB# := false;
+                        end if;
+                end loop;
+                
+                if invalidB# then                       --If B# was invalid output message about it 
+                        dbms_output.put_line('The B# is invalid.');             
+                else                                            --Valid B#, proceed to delete student
+                        delete from students      --Delete student from the students table
+                        where B# = B#_in;
+                end if;         
+                        
+        end;
+
+
 procedure drop_class(B# in students.B#%type, classid in classes.classid%type)
         is
         allowClassDrop boolean;
