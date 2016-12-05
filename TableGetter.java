@@ -13,20 +13,20 @@ public class TableGetter {
         private OracleDataSource ds;
         private Connection conn;        
         
-        public TableGetter (){
+        public TableGetter (String username, String password){
                 try{
                         //Connecting to Oracle server
                 ds = new oracle.jdbc.pool.OracleDataSource();
                 ds.setURL("jdbc:oracle:thin:@castor.cc.binghamton.edu:1521:acad111");
 
-                        Scanner scanner = new Scanner(System.in);
-            System.out.print("Username: ");
-            String username = scanner.next();
+//                      Scanner scanner = new Scanner(System.in);
+//           System.out.print("Username: ");
+//            String username = scanner.next();
 
-            Console console = System.console();
-            System.out.print("Password: ");
-            char[] passString = console.readPassword();
-            String password = new String(passString );
+//           Console console = System.console();
+//            System.out.print("Password: ");
+//           char[] passString = console.readPassword();
+//            String password = new String(passString );
 
                 conn = ds.getConnection(username, password);
                 System.out.println("Welcome! \n");
@@ -36,25 +36,6 @@ public class TableGetter {
                 catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}        
         }       
         
-
-        public void test(){
-            try{
-                //set up call for stored function
-            CallableStatement cs = conn.prepareCall("begin ? := srs_java.test_func(); end;");
-
-                        cs.registerOutParameter(1, java.sql.Types.VARCHAR);
-                        
-            //execute pl/sql function and retrieve result set
-            cs.execute();
-
-            String result = cs.getString(1); 
-
-                        System.out.println(result);
-            cs.close();
-            }
-        catch (SQLException ex) { System.out.println ("\n*** SQLException caught ***\n" + ex.getMessage());}
-            catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}    
-        }
 
         public String deleteStudent(String BNum){
                 try{
@@ -151,6 +132,7 @@ public class TableGetter {
                         String errors = cs.getString(1);
                         if (errors != null){    //A problem was found with the input
                                 System.out.println("ERROR " + errors);
+                                results = errors;
                         } 
                         else{  //Input is valid, retrieve results
                                 CallableStatement cs1 = conn.prepareCall("begin ? := srs_java.get_class_info(?); end;");
@@ -193,6 +175,7 @@ public class TableGetter {
                         System.out.println("got past helper call");
                         if (errors != null){    //A problem was found with the input
                                 System.out.println("ERROR " + errors);
+                                results = errors;
                         } 
                         else{  //Input is valid, retrieve results
                                 CallableStatement cs1 = conn.prepareCall("begin ? := srs_java.get_prereqs(?,?); end;");
@@ -208,7 +191,7 @@ public class TableGetter {
                         //store result of get_prereqs in string to be passed back to caller
                                 while (rs.next()) {
                                         for (int i = 1; i <=2; i++)
-                                                results += rs.getString(i) + "\t";
+                                                results += rs.getString(i);
                                         results += "\n";
                                 }
                                 cs1.close();
@@ -221,17 +204,13 @@ public class TableGetter {
             catch (Exception e) {System.out.println ("\n*** other Exception caught ***\n");}    
             return null;
         }
-        public String getStudentClassInfo(){
+        public String getStudentClassInfo(String BNum){
                 try{
 //                      String sid = new String("B001");
                 //set up call for stored function
                         CallableStatement cs = conn.prepareCall("begin ? := srs_java.find_student_class_helper(?); end;");
                         String results = new String();  
                         
-                        Scanner scanner = new Scanner(System.in);
-            System.out.print("B#:  ");
-            String BNum = scanner.next();
-
             cs.registerOutParameter(1, java.sql.Types.VARCHAR);
                         cs.setString(2, BNum);
                         
@@ -240,6 +219,7 @@ public class TableGetter {
                         String errors = cs.getString(1);
                         if (errors != null){    //A problem was found with the input
                                 System.out.println("ERROR " + errors);
+                                results = errors;
                         } 
                         else{  //Input is valid, retrieve results
                                 CallableStatement cs1 = conn.prepareCall("begin ? := srs_java.find_student_class_info(?); end;");
@@ -495,3 +475,4 @@ public class TableGetter {
 
 
 }
+
