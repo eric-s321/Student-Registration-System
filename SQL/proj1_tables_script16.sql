@@ -7,11 +7,11 @@ drop table prerequisites;
 drop table courses;
 drop table students;
 drop table logs;
-drop sequence logSeq;
-
-create sequence logSeq
-increment by 1
-start with 1000;
+--drop sequence logSeq;
+--drop trigger increase_class_size;
+--drop trigger reduce_class_size;
+--drop trigger delete_enrollments_of_student;
+--drop trigger student_log;
 
 create table students (B# char(4) primary key check (B# like 'B%'),
 firstname varchar2(15) not null, lastname varchar2(15) not null, status varchar2(10) 
@@ -63,6 +63,7 @@ foreign key (pre_dept_code, pre_course#) references courses on delete cascade);
 
 create table logs (logid number(4) primary key, who varchar2(10) not null, time date not null,
 table_name varchar2(12) not null, operation varchar2(6) not null, key_value varchar2(10));
+
 
 insert into students values ('B001', 'Anne', 'Broder', 'junior', 3.17, 'broder@bu.edu', '17-JAN-90', 'CS');
 insert into students values ('B002', 'Terry', 'Buttler', 'senior', 3.0, 'buttler@bu.edu', '28-MAY-89', 'Math');
@@ -131,13 +132,12 @@ insert into enrollments values ('B001', 'c0004', 'A');
 insert into enrollments values ('B001', 'c0005', 'B');
 insert into enrollments values ('B003', 'c0001', 'I');
 
-
 insert into prerequisites values ('CS', 432, 'CS', 240);
 insert into prerequisites values ('CS', 432, 'Math', 221);
 insert into prerequisites values ('Math', 314, 'Math', 221);
 insert into prerequisites values ('CS', 532, 'Math', 221);
 insert into prerequisites values ('CS', 532, 'CS', 240);
+insert into prerequisites values ('Math', 221, 'Biol', 425);
 
 
-insert into logs values (logSeq.nextval, 'escagne1',timestamp '2016-11-14 09:15:00.0', 'students', 'insert', 'B109'); 
-insert into logs values (logSeq.nextval, 'acad111',timestamp '2016-11-10 17:45:10.0', 'students', 'delete', 'B109'); 
+

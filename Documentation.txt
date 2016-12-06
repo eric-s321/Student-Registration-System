@@ -1,0 +1,108 @@
+delete_student(B#)
+
+srspackage
+This procedure will delete a student from the students table.  Before deleting the student, all enrollments the student has will be removed via trigger 
+delete_enrollments_of_student.  If an invalid B# is input, the procedure will output invalid input.  This procedure assume the B# is the correct length,
+ length checking will need to be done in Java program (or whichever language you choose).
+
+When a student is deleted the size of each class they are enrolled in will be decreased by one via the reduce_class_size trigger (called by 
+the delete_enrollments_of_student trigger)
+
+
+srspackage_java
+This function is the same as the procedure above except it returns the output message.  This is the version that should be used with a java program.
+
+
+drop_class(B#,classid)
+
+srspackage
+This procedure will drop a class a student is taking.  B# and classid will be checked for validity.  If either one is not valid the appropriate message will 
+be displayed.  The procedure will also check that the student is enrolled in the class they are trying to drop.  If they are not "The student is not enrolled in the 
+class" will be displayed.  If dropping the class would cause a violation of a prerequisite requirement for another class "The drop is
+not permitted because another class uses it as a prerequisite." will be displayed.  
+
+In all of the above cases the drop request will not be executed.  If the class is the only one a student is taking, or the student is the last student in the class  "This 
+student is not enrolled in any classes." and  "The class now has no students." will be reported respectively.  
+
+When a class is dropped the trigger reduce_class_size will be called to update the corresponding class size. 
+
+srspackage_java
+This function is the same as the procedure above except it returns the output message.  This is the version that should be used with a java program.
+
+
+enroll_student(B#,classid)
+
+srspackage
+This procedure will enroll a student in a class.  First the B# and classid will be checked for validity.  If there is an issue the appropriate message will be displayed.  If placing the student into the class would make the class too large  “The class is full.”  will be displayed. If the student is already in the class, “The student is already in the class.” will be displayed.  If the student is already enrolled in four other classes in the same semester and the same year, “Students cannot be enrolled in more than four classes in the same semester.” will be reported.  If the student has not completed the required prerequisite courses with at least a grade C, “Prerequisite not satisfied.” will be reported.  
+
+In all of the above cases the enroll request will not be executed.  If the student is already enrolled in three other classes in the same semester and the same year  "You 
+are overloaded." will be reported and the enrollment will go through. When an enrollment is accepted the trigger increase_class_size will be called to updated the size of 
+that class.
+
+
+srspackage_java
+This function is the same as the procedure above except it returns the output message.  This is the version that should be used with a java program.  
+
+
+get_class_info(classid)
+
+srspackage
+This procedure will list the classid and course title of a class as well as all the students who are taking it or haven taken it in the past.  
+The classid will be checked for validity and if it is not valid the approriate message will be displayed.  If a class is entered that is valid but 
+no student has taken it "No student has enrolled in the class." will be reported.
+
+srspackage_java
+The get_class_info function is broken into two functions, get_class_info and get_class_info_helper.  The helper function does all appropriate error checking 
+mentioned above and returns a String containing the error messages to the caller.  If that String is empty, the input is valid and get_class_info can now be 
+called, which displays all the results.  get_class_info should not be called if the helper function found a problem. A cursor to the results will be returned.
+
+
+get_prereqs(dept_code, course#)
+
+srspackage
+This procedure will display all courses that the given course needs as a prereq.  First the dept_code and course# will be checked for validity.  
+If either of them are invalid the appropriate message will be displayed.  This procedure will display direct prerequisites as well as indirect prerequisites.  (i.e. if Math 
+314 is a prerequisite of CS 432 and Math 221 is a prerequisite of Math 314, both Math 314 and Math 221 will be displayed as prerequisites for CS 432).
+
+srspackage_java 
+The get_prereqs function is broken into two functions, get_prereqs_helper and get_prereqs.  The helper function will do all error checking and return a string of the error 
+messages to the caller.  If there were errors get_prereqs should not be called.  A cursor to the results will be returned.
+
+
+find_student_class_info(B#)
+
+srspackage
+This procedure will list every class the student has taken or is taking as well as number and letter grade information associated with that class. 
+The B# will be checked for validity, if there is a problem "The B# is invalid" will be displayed.  If the student has not taken any courses the 
+message "The student has not taken any course." will be displayed. 
+
+srspackage_java
+This implementation consists of a helper function and the original function.  The helper function will check for errors and return a string of those errors to the caller.  
+If the string is empty, then the input was valid and find_student_class_info can be called which will return a cursor to results.
+
+
+The remaining procedures will all be discussed in terms of there srspackage implementation.  The srspackage_java implementation is the same except it returns a ref cursor 
+to the results instead of displaying them to the screen.  
+
+show_students
+This procedure will display all tuples in the students table to the screen. 
+show_courses
+This procedure will display all tuples in the courses table to the screen.
+
+show_course_credit
+This procedure will display all tuples in the course_credit table to the screen.
+
+show_prerequisites
+This procedure will display all tuples in the prerequisites table to the screen.
+
+show_classes
+This procedure will display all tuples in the classes table to the screen.
+
+show_enrollments
+This procedure will display all tuples in the enrollments table to the screen.
+
+show_grades
+This procedure will display all tuples in the grades table to the screen.
+
+show_logs
+This procedure will display all tuples in the logs table to the screen.

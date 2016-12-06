@@ -1,0 +1,9 @@
+
+The Student Registration System source code is kept in two directories.
+All PL/SQL source code is in the SQL directory.  
+If you wish to test PL/SQL code directly without going through the Java interface please navigate to the SQL directory  
+and login using the command sqlplus <username>.  You will be prompted for your password.
+All Java code is within the Java directory.  Further instructions to run the app are located inside that directory.
+
+Please view the document "Documentation.txt" for a detailed description of all functions and procedures.
+

@@ -1,0 +1,4 @@
+start proj1_tables_script16
+start srspackage
+start srspackage_java
+start triggers
