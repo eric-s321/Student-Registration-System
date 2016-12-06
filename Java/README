@@ -1,0 +1,12 @@
+
+To run the Student Registration System simply type the following commands:
+
+make clean
+make
+java App
+
+You will be prompted for your login credentials and the SRS will launch.
+
+
+Javadocs can be found at the beginning of each class/interface explaining the functionality and purpose 
+of each class.
